@@ -1,0 +1,196 @@
+SUBSTITUA SOMENTE A FUNÇÃO buscarSanidadeDoLote NO CÓDIGO.GS
+PELA FUNÇÃO COMPLETA ABAIXO:
+
+function buscarSanidadeDoLote(planilha, idLote) {
+  const aba = planilha.getSheetByName(
+    NOME_ABA_SANIDADE
+  );
+
+  const resultado = {
+    tratamentos: [],
+    quantidadeRegistros: 0,
+    totalAnimaisTratados: 0,
+    custoTotalNumerico: 0,
+    custoTotal: 'R$ 0,00'
+  };
+
+  if (!aba || aba.getLastRow() < 2) {
+    return resultado;
+  }
+
+  const dados = aba.getDataRange().getDisplayValues();
+  const cabecalhos = dados[0].map(normalizarTexto);
+
+  const indices = {
+    idTratamento: localizarPrimeiroIndice(
+      cabecalhos,
+      ['idtratamento', 'id']
+    ),
+
+    idLote: localizarPrimeiroIndice(
+      cabecalhos,
+      ['idlote', 'loteid']
+    ),
+
+    data: localizarPrimeiroIndice(
+      cabecalhos,
+      ['data', 'datatratamento']
+    ),
+
+    quantidadeAnimais: localizarPrimeiroIndice(
+      cabecalhos,
+      [
+        'quantidadeanimais',
+        'quantidadedeanimais',
+        'quantidadeanimal',
+        'qtdanimais',
+        'qtdanimal'
+      ]
+    ),
+
+    produto: localizarPrimeiroIndice(
+      cabecalhos,
+      ['produto', 'medicamento', 'vacina']
+    ),
+
+    dosePorAnimal: localizarPrimeiroIndice(
+      cabecalhos,
+      [
+        'doseporanimalml',
+        'doseporanimal',
+        'doseanimalml',
+        'doseanimal',
+        'doseml'
+      ]
+    ),
+
+    volumeTotal: localizarPrimeiroIndice(
+      cabecalhos,
+      [
+        'volumetotalml',
+        'volumetotal',
+        'totalml'
+      ]
+    ),
+
+    custoTotal: localizarPrimeiroIndice(
+      cabecalhos,
+      [
+        'custototal',
+        'valortotal',
+        'custo'
+      ]
+    ),
+
+    motivo: localizarPrimeiroIndice(
+      cabecalhos,
+      ['motivo', 'diagnostico', 'ocorrencia']
+    ),
+
+    observacoes: localizarPrimeiroIndice(
+      cabecalhos,
+      ['observacoes', 'observacao']
+    )
+  };
+
+  if (indices.idLote === -1) {
+    throw new Error(
+      'A coluna "IDLote" não foi encontrada na aba Sanidade.'
+    );
+  }
+
+  const idLoteNormalizado = normalizarTexto(idLote);
+
+  for (let i = 1; i < dados.length; i++) {
+    const linha = dados[i];
+
+    const idRegistro = normalizarTexto(
+      obterValor(linha, indices.idLote)
+    );
+
+    if (idRegistro !== idLoteNormalizado) {
+      continue;
+    }
+
+    const quantidadeTexto = obterValor(
+      linha,
+      indices.quantidadeAnimais
+    );
+
+    const doseTexto = obterValor(
+      linha,
+      indices.dosePorAnimal
+    );
+
+    const volumeTexto = obterValor(
+      linha,
+      indices.volumeTotal
+    );
+
+    const custoNumerico = converterNumero(
+      obterValor(linha, indices.custoTotal)
+    );
+
+    const quantidadeNumerica =
+      converterNumero(quantidadeTexto);
+
+    resultado.tratamentos.push({
+      idTratamento:
+        obterValor(linha, indices.idTratamento),
+
+      data:
+        obterValor(linha, indices.data),
+
+      quantidadeAnimais:
+        quantidadeTexto || '0',
+
+      produto:
+        obterValor(linha, indices.produto),
+
+      dosePorAnimal:
+        doseTexto,
+
+      volumeTotal:
+        volumeTexto,
+
+      custoTotal:
+        formatarMoeda(custoNumerico),
+
+      motivo:
+        obterValor(linha, indices.motivo),
+
+      observacoes:
+        obterValor(linha, indices.observacoes)
+    });
+
+    resultado.totalAnimaisTratados +=
+      quantidadeNumerica;
+
+    resultado.custoTotalNumerico +=
+      custoNumerico;
+  }
+
+  resultado.quantidadeRegistros =
+    resultado.tratamentos.length;
+
+  resultado.custoTotal = formatarMoeda(
+    resultado.custoTotalNumerico
+  );
+
+  return resultado;
+}
+
+DEPOIS:
+
+1. Salve o Código.gs.
+2. Vá em Implantar → Gerenciar implantações.
+3. Clique no lápis.
+4. Selecione Nova versão.
+5. Descrição: Corrigir quantidade e dose da sanidade.
+6. Clique em Implantar.
+
+Na aba Sanidade, os cabeçalhos recomendados continuam sendo:
+
+QuantidadeAnimais
+DosePorAnimalML
+VolumeTotalML
