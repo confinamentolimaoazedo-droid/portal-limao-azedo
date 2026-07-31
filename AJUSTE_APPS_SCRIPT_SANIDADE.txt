@@ -1,0 +1,40 @@
+AJUSTE DO APPS SCRIPT — SANIDADE
+
+Na função buscarSanidadeDoLote, deixe os índices com alternativas de cabeçalho:
+
+quantidadeAnimais: localizarPrimeiroIndice(
+  cabecalhos,
+  [
+    'quantidadeanimais',
+    'quantidadedeanimais',
+    'quantidadeanimal',
+    'qtdanimais'
+  ]
+),
+
+dosePorAnimal: localizarPrimeiroIndice(
+  cabecalhos,
+  [
+    'doseporanimalml',
+    'doseporanimal',
+    'doseanimalml',
+    'doseanimal'
+  ]
+),
+
+volumeTotal: localizarPrimeiroIndice(
+  cabecalhos,
+  [
+    'volumetotalml',
+    'volumetotal'
+  ]
+),
+
+Isso corrige:
+- Animais tratados aparecendo como 0;
+- Dose por animal aparecendo como traço.
+
+A solução ideal é manter na planilha exatamente:
+QuantidadeAnimais
+DosePorAnimalML
+VolumeTotalML
