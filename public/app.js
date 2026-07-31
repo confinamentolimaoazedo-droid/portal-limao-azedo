@@ -121,15 +121,7 @@ function preencherTelaLote(dados) {
   pesoEntradaNumerico = converterNumero(dados.pesoEntrada);
   pesoFinalNumerico = converterNumero(dados.pesoFinalProjetado);
 
-  preencherTabelaCarcaca(
-    'tabelaCarcacaEntrada',
-    pesoEntradaNumerico
-  );
-
-  preencherTabelaCarcaca(
-    'tabelaCarcacaFinal',
-    pesoFinalNumerico
-  );
+  atualizarResultadoCarcacaFinal();
 
   definirTexto('curralResultado', dados.curral);
   definirTexto('carimboResultado', dados.carimbo);
@@ -143,37 +135,28 @@ function preencherTelaLote(dados) {
   atualizarProgresso(dados);
 }
 
-function preencherTabelaCarcaca(idTabela, pesoVivo) {
-  const corpo = document.getElementById(idTabela);
+function atualizarResultadoCarcacaFinal() {
+  const seletor = document.getElementById('rendimentoCarcaca');
+  const rendimento = seletor ? Number(seletor.value) : 50;
 
-  if (!corpo) {
+  if (!pesoFinalNumerico || pesoFinalNumerico <= 0) {
+    definirTexto('carcacaFinalKg', '—');
+    definirTexto('carcacaFinalArrobas', '—');
     return;
   }
 
-  corpo.innerHTML = '';
+  const pesoCarcaca = pesoFinalNumerico * (rendimento / 100);
+  const arrobasCarcaca = pesoCarcaca / 15;
 
-  for (let rendimento = 50; rendimento <= 55; rendimento++) {
-    const linha = document.createElement('tr');
+  definirTexto(
+    'carcacaFinalKg',
+    `${formatarNumero(pesoCarcaca, 2)} kg`
+  );
 
-    if (!pesoVivo || pesoVivo <= 0) {
-      linha.innerHTML = `
-        <td>${rendimento}%</td>
-        <td>—</td>
-        <td>—</td>
-      `;
-    } else {
-      const pesoCarcaca = pesoVivo * (rendimento / 100);
-      const arrobas = pesoCarcaca / 15;
-
-      linha.innerHTML = `
-        <td>${rendimento}%</td>
-        <td>${formatarNumero(pesoCarcaca, 2)} kg</td>
-        <td>${formatarNumero(arrobas, 3)} @</td>
-      `;
-    }
-
-    corpo.appendChild(linha);
-  }
+  definirTexto(
+    'carcacaFinalArrobas',
+    `${formatarNumero(arrobasCarcaca, 2)} @`
+  );
 }
 
 function formatarNumero(valor, casasDecimais) {
@@ -182,6 +165,17 @@ function formatarNumero(valor, casasDecimais) {
     maximumFractionDigits: casasDecimais
   });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+  const seletor = document.getElementById('rendimentoCarcaca');
+
+  if (seletor) {
+    seletor.addEventListener(
+      'change',
+      atualizarResultadoCarcacaFinal
+    );
+  }
+});
 
 function atualizarProgresso(dados) {
   const diasConfinados = converterNumero(dados.diasConfinados);

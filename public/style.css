@@ -1082,3 +1082,109 @@
     }
   }
 
+  .simulador-carcaca {
+    margin-top: 18px;
+    padding: 18px;
+    border: 1px solid rgba(8, 120, 62, 0.14);
+    border-radius: 18px;
+    background: linear-gradient(
+      180deg,
+      rgba(243, 250, 246, 0.98),
+      rgba(255, 255, 255, 0.98)
+    );
+  }
+
+  .simulador-cabecalho {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .simulador-cabecalho > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .simulador-cabecalho span {
+    color: var(--verde-escuro);
+    font-size: 14px;
+    font-weight: 900;
+  }
+
+  .simulador-cabecalho small {
+    color: var(--texto-suave);
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .seletor-rendimento {
+    position: relative;
+    flex: 0 0 auto;
+  }
+
+  .seletor-rendimento select {
+    min-width: 92px;
+    height: 46px;
+    padding: 0 38px 0 15px;
+    border: 1px solid rgba(8, 120, 62, 0.22);
+    border-radius: 14px;
+    background:
+      linear-gradient(45deg, transparent 50%, var(--verde-principal) 50%)
+        calc(100% - 18px) 19px / 6px 6px no-repeat,
+      linear-gradient(135deg, var(--verde-principal) 50%, transparent 50%)
+        calc(100% - 12px) 19px / 6px 6px no-repeat,
+      var(--branco);
+    color: var(--verde-principal);
+    font: inherit;
+    font-size: 16px;
+    font-weight: 900;
+    appearance: none;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .seletor-rendimento select:focus {
+    border-color: var(--verde-principal);
+    box-shadow: 0 0 0 4px rgba(8, 120, 62, 0.11);
+  }
+
+  .resultado-carcaca-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .resultado-carcaca-item {
+    padding: 17px;
+    border: 1px solid rgba(8, 120, 62, 0.12);
+    border-radius: 16px;
+    background: var(--branco);
+  }
+
+  .resultado-carcaca-item span {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--texto-suave);
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  .resultado-carcaca-item strong {
+    color: var(--verde-principal);
+    font-size: 22px;
+    line-height: 1.15;
+  }
+
+  @media (max-width: 520px) {
+    .simulador-cabecalho {
+      align-items: flex-start;
+    }
+
+    .resultado-carcaca-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+

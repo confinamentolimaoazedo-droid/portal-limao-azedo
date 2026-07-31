@@ -1,46 +1,24 @@
-# Portal Limão Azedo — Versão 2.0
+# Portal Limão Azedo — Versão 2.1
 
-Portal do Cliente do Limão Azedo Confinamento hospedado na Cloudflare.
+## Alteração principal
 
-## Novidades da versão 2.0
+O cálculo de rendimento de carcaça ficou somente no peso vivo final projetado.
 
-- Simulação completa de rendimento de carcaça de 50% a 55%.
-- Tabela de carcaça para o peso vivo de entrada.
-- Tabela de carcaça para o peso vivo final projetado.
-- Peso de carcaça em kg.
-- Arrobas de carcaça considerando 15 kg por arroba.
-- Imagem de prévia para compartilhamento no WhatsApp.
-- `keep_vars: true` para preservar variáveis cadastradas no painel da Cloudflare.
+Na entrada do lote permanece apenas o peso vivo de entrada informado na planilha.
 
-## Estrutura
+Na seção Resultado previsto, o cliente escolhe entre 50% e 55% e o portal calcula:
 
-- `public/index.html`: interface.
-- `public/style.css`: visual.
-- `public/app.js`: consulta e cálculos.
-- `public/logo.webp`: logotipo.
-- `public/preview-whatsapp.jpg`: imagem de compartilhamento.
-- `src/index.js`: Worker e rota `/api/consultar`.
-- `wrangler.jsonc`: configuração da Cloudflare.
-
-## Variáveis na Cloudflare
-
-Cadastre em **Settings → Variables and Secrets**:
-
-### APPS_SCRIPT_URL
-
-Tipo: Text
-
-Valor: URL oficial `/exec` do Apps Script.
-
-### API_SECRET
-
-Tipo: Secret
-
-Valor: exatamente a mesma chave definida no `SEGREDO_API` do Apps Script.
-
-Nunca coloque a chave secreta no GitHub.
+- Peso de carcaça em kg;
+- Arrobas de carcaça;
+- Uma arroba equivalente a 15 kg de carcaça.
 
 ## Atualização dos dados
 
-Alterações na planilha são consultadas em tempo real. Não é necessário novo deploy
-para atualizar peso, dieta, GMD, datas ou demais informações do lote.
+Os dados continuam sendo consultados em tempo real na planilha Google Sheets.
+
+## Variáveis na Cloudflare
+
+- `APPS_SCRIPT_URL` como Text;
+- `API_SECRET` como Secret.
+
+O `wrangler.jsonc` mantém `keep_vars: true`.

@@ -337,30 +337,8 @@
         </div>
 
         <div class="linha-dado">
-          <span>Peso vivo de entrada</span>
+          <span>Peso de entrada</span>
           <strong id="pesoEntrada">—</strong>
-        </div>
-
-        <div class="carcaca-bloco">
-          <div class="carcaca-bloco-cabecalho">
-            <div>
-              <span>Estimativa de carcaça na entrada</span>
-              <small>Cálculo sobre o peso vivo de entrada</small>
-            </div>
-          </div>
-
-          <div class="tabela-carcaca-wrapper">
-            <table class="tabela-carcaca">
-              <thead>
-                <tr>
-                  <th>Rendimento</th>
-                  <th>Carcaça</th>
-                  <th>Arrobas</th>
-                </tr>
-              </thead>
-              <tbody id="tabelaCarcacaEntrada"></tbody>
-            </table>
-          </div>
         </div>
 
         <div class="linha-dado">
@@ -401,30 +379,40 @@
           </div>
         </div>
 
-        <div class="carcaca-bloco carcaca-bloco-final">
-          <div class="carcaca-bloco-cabecalho">
+        <div class="simulador-carcaca">
+          <div class="simulador-cabecalho">
             <div>
-              <span>Simulação de rendimento de carcaça</span>
-              <small>Comparativo de 50% a 55% sobre o peso vivo final</small>
+              <span>Rendimento de carcaça</span>
+              <small>Selecione entre 50% e 55%</small>
+            </div>
+
+            <label for="rendimentoCarcaca" class="seletor-rendimento">
+              <select id="rendimentoCarcaca" aria-label="Rendimento de carcaça">
+                <option value="50">50%</option>
+                <option value="51">51%</option>
+                <option value="52">52%</option>
+                <option value="53">53%</option>
+                <option value="54">54%</option>
+                <option value="55">55%</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="resultado-carcaca-grid">
+            <div class="resultado-carcaca-item">
+              <span>Peso de carcaça</span>
+              <strong id="carcacaFinalKg">—</strong>
+            </div>
+
+            <div class="resultado-carcaca-item">
+              <span>Arrobas de carcaça</span>
+              <strong id="carcacaFinalArrobas">—</strong>
             </div>
           </div>
 
-          <div class="tabela-carcaca-wrapper">
-            <table class="tabela-carcaca">
-              <thead>
-                <tr>
-                  <th>Rendimento</th>
-                  <th>Carcaça</th>
-                  <th>Arrobas</th>
-                </tr>
-              </thead>
-              <tbody id="tabelaCarcacaFinal"></tbody>
-            </table>
-          </div>
-
           <p class="nota-carcaca">
-            Estimativa calculada por: peso vivo × rendimento. Uma arroba
-            corresponde a 15 kg de carcaça.
+            Cálculo estimado: peso vivo final × rendimento selecionado.
+            Uma arroba corresponde a 15 kg de carcaça.
           </p>
         </div>
       </section>
