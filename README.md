@@ -52,3 +52,10 @@ npm run dev
 ```
 
 O `.dev.vars` está ignorado pelo Git.
+
+
+## Atualização 1.1 — Simulador de rendimento de carcaça
+
+O portal permite selecionar rendimento entre 50% e 55%. O mesmo rendimento
+é aplicado ao peso vivo de entrada e ao peso vivo final projetado, mostrando
+peso de carcaça em kg e arrobas de carcaça.
