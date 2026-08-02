@@ -63,7 +63,7 @@ async function consultarLote(evento) {
   }
 }
 
-function preencherTelaLote(dados) {
+ preencherTelaLote(dados) {
   definirTexto('clienteNome', dados.cliente, 'Cliente não informado');
   definirTexto('loteNome', dados.lote, 'Lote não informado');
   definirTexto('pesoEstimado', dados.pesoEstimado);
@@ -536,15 +536,82 @@ function atualizarProgresso(dados) {
   }
 }
 
+/**
+ * Converte números recebidos do backend ou textos formatados.
+ *
+ * Aceita:
+ * 541.5
+ * "541.5"
+ * "541,5"
+ * "2.200,00"
+ * "R$ 2.200,00"
+ * "19 kg"
+ */
 function converterNumero(valor) {
-  const texto = String(valor || '')
-    .replace(/\s/g, '')
-    .replace(/\./g, '')
-    .replace(',', '.')
-    .replace(/[^0-9.-]/g, '');
+  if (
+    valor === null ||
+    valor === undefined ||
+    valor === ''
+  ) {
+    return 0;
+  }
 
-  const numero = Number(texto);
-  return Number.isFinite(numero) ? numero : 0;
+  /*
+   * Quando o Apps Script envia um número verdadeiro,
+   * não devemos remover o ponto decimal.
+   */
+  if (typeof valor === 'number') {
+    return Number.isFinite(valor) ? valor : 0;
+  }
+
+  let texto = String(valor)
+    .trim()
+    .replace(/\s/g, '')
+    .replace(/R\$/gi, '')
+    .replace(/[^0-9,.-]/g, '');
+
+  if (!texto) {
+    return 0;
+  }
+
+  const possuiVirgula = texto.includes(',');
+  const possuiPonto = texto.includes('.');
+
+  /*
+   * Formato brasileiro:
+   * 2.200,00 → 2200.00
+   */
+  if (possuiVirgula && possuiPonto) {
+    const ultimaVirgula = texto.lastIndexOf(',');
+    const ultimoPonto = texto.lastIndexOf('.');
+
+    if (ultimaVirgula > ultimoPonto) {
+      texto = texto
+        .replace(/\./g, '')
+        .replace(',', '.');
+    } else {
+      /*
+       * Formato internacional:
+       * 2,200.00 → 2200.00
+       */
+      texto = texto.replace(/,/g, '');
+    }
+  } else if (possuiVirgula) {
+    /*
+     * 541,5 → 541.5
+     */
+    texto = texto.replace(',', '.');
+  }
+
+  /*
+   * Quando existe somente ponto:
+   * 541.5 permanece 541.5.
+   */
+  const resultado = Number(texto);
+
+  return Number.isFinite(resultado)
+    ? resultado
+    : 0;
 }
 
 function definirTexto(id, valor, valorPadrao = '—') {
