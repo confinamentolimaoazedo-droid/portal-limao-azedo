@@ -63,7 +63,7 @@ async function consultarLote(evento) {
   }
 }
 
- preencherTelaLote(dados) {
+function preencherTelaLote(dados) {
   definirTexto('clienteNome', dados.cliente, 'Cliente não informado');
   definirTexto('loteNome', dados.lote, 'Lote não informado');
   definirTexto('pesoEstimado', dados.pesoEstimado);
