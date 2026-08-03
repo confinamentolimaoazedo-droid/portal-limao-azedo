@@ -1,0 +1,13 @@
+PORTAL DO CLIENTE V6.2 — PASTA PUBLIC COMPLETA
+
+Substitua a pasta public atual por esta pasta public.
+
+Novidades:
+- pré-visualização do PDF dentro do próprio portal;
+- botão Voltar ao lote;
+- botão Salvar / imprimir PDF;
+- WhatsApp restaurado: (67) 99891-6845;
+- e-mail restaurado: confinamentolimaoazedo@hotmail.com;
+- cache PWA atualizado para V6.2.
+
+Após o deploy, feche o aplicativo instalado e abra novamente.
