@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Portal do Cliente — V6.7.3
+ * Portal do Cliente — V6.7.4
  *
  * Atualizações:
  * - Consumo diário com data e horário;
@@ -10,7 +10,7 @@
  * - exibe Consumo de MS com 3 casas decimais no resumo;
  * - preserva protocolo sanitário e custos;
  * - adiciona Histórico de Tratos agrupado por data;
- * - adiciona painel leve de cotações do Boi Gordo B3 via widget oficial do TradingView.
+ * - mantém o portal sem módulo de cotações externas.
  */
 
 const PROTOCOLO_PADRAO_LIMAO_AZEDO_V652 = [
@@ -46,7 +46,6 @@ document.addEventListener('DOMContentLoaded', function() {
   instalarCardConsumoV652();
   instalarCardTratosV66();
   instalarHistoricoTratosV662();
-  instalarMercadoBoiGordoV67();
   instalarProtocoloV652();
   envolverPreenchimentoLoteV652();
 });
@@ -424,55 +423,6 @@ function instalarEstilosV652() {
 
 
 
-    #mercadoBoiGordoCardV67 {
-      margin-bottom: 18px;
-      padding: 20px;
-      border: 1px solid rgba(8,120,62,.10);
-      border-radius: 20px;
-      background: var(--branco, #fff);
-      box-shadow: var(--sombra, 0 14px 38px rgba(13,64,37,.09));
-    }
-
-    .mercado-descricao-v67 {
-      margin: -4px 0 15px;
-      color: var(--muted, #68756d);
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .mercado-widget-v67 {
-      min-height: 420px;
-      overflow: hidden;
-      border: 1px solid rgba(8,120,62,.13);
-      border-radius: 17px;
-      background: #fff;
-    }
-
-    .mercado-widget-v67 tv-tickers {
-      display: block;
-      width: 100%;
-      min-height: 420px;
-    }
-
-    .mercado-aviso-v67 {
-      margin: 12px 2px 0;
-      color: var(--muted, #68756d);
-      font-size: 11px;
-      line-height: 1.45;
-      text-align: center;
-    }
-
-    .mercado-carregando-v673,
-    .mercado-erro-v673 {
-      min-height: 420px;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      color: var(--muted, #68756d);
-      font-size: 13px;
-      line-height: 1.5;
-      text-align: center;
-    }
 
     @media (min-width: 680px) {
       #resumoLoteCardV652 .grade-indicadores {
@@ -484,8 +434,7 @@ function instalarEstilosV652() {
       #consumoAutomacaoCard,
       #resumoLoteCardV652,
       #tratosDoDiaCardV66,
-      #historicoTratosCardV662,
-      #mercadoBoiGordoCardV67 {
+      #historicoTratosCardV662 {
         padding: 18px;
       }
 
@@ -541,7 +490,7 @@ function instalarCardConsumoV652() {
   card.innerHTML = `
     <div class="cabecalho-card-v652">
       <div>
-        <span class="rotulo-v652">03. Automação do trato</span>
+        <span class="rotulo-v652">02. Automação do trato</span>
         <h3>Consumo diário</h3>
       </div>
       <div class="icone-card-v652" aria-hidden="true">🌽</div>
@@ -591,7 +540,7 @@ function instalarCardTratosV66() {
   card.innerHTML = `
     <div class="cabecalho-card-v652">
       <div>
-        <span class="rotulo-v652">04. Tratos do dia</span>
+        <span class="rotulo-v652">03. Tratos do dia</span>
         <h3>Fornecimento realizado</h3>
       </div>
 
@@ -797,7 +746,7 @@ function instalarHistoricoTratosV662() {
     <div class="cabecalho-card-v652">
       <div>
         <span class="rotulo-v652">
-          05. Histórico de tratos
+          04. Histórico de tratos
         </span>
         <h3>Fornecimentos anteriores</h3>
       </div>
@@ -961,219 +910,6 @@ function preencherHistoricoTratosV662(dados) {
 }
 
 
-function instalarMercadoBoiGordoV67() {
-  if (
-    document.getElementById(
-      'mercadoBoiGordoCardV67'
-    )
-  ) {
-    return;
-  }
-
-  const card = document.createElement('section');
-  card.id = 'mercadoBoiGordoCardV67';
-  card.className = 'cartao mercado-boi-gordo-v67';
-
-  card.innerHTML = `
-    <div class="cabecalho-card-v652">
-      <div>
-        <span class="rotulo-v652">
-          Mercado
-        </span>
-        <h3>Cotação do Boi Gordo — B3</h3>
-      </div>
-
-      <div
-        class="icone-card-v652"
-        aria-hidden="true"
-      >
-        📊
-      </div>
-    </div>
-
-    <p class="mercado-descricao-v67">
-      Preço e variação diária do contrato contínuo
-      e dos principais vencimentos do boi gordo na B3.
-    </p>
-
-    <div
-      id="mercadoWidgetV67"
-      class="mercado-widget-v67"
-    >
-      <div class="mercado-carregando-v673">
-        Carregando cotações...
-      </div>
-    </div>
-
-    <p class="mercado-aviso-v67">
-      Dados fornecidos pelo TradingView.
-      As cotações podem apresentar atraso.
-      Conteúdo exclusivamente informativo.
-    </p>
-  `;
-
-  const contato = localizarCardContatoV672();
-
-  if (contato && contato.parentNode) {
-    contato.parentNode.insertBefore(card, contato);
-  } else {
-    const telaLote = document.getElementById('telaLote');
-
-    if (telaLote) {
-      telaLote.appendChild(card);
-    }
-  }
-
-  carregarWidgetMercadoV673();
-}
-
-function localizarCardContatoV672() {
-  const botaoContato = document.querySelector(
-    '.botao-contato'
-  );
-
-  if (botaoContato) {
-    return botaoContato.closest('section');
-  }
-
-  const secoes = Array.from(
-    document.querySelectorAll('#telaLote section')
-  );
-
-  return secoes.find(function(secao) {
-    return /fale conosco|contato/i.test(
-      secao.textContent || ''
-    );
-  }) || null;
-}
-
-function carregarWidgetMercadoV673() {
-  const destino = document.getElementById(
-    'mercadoWidgetV67'
-  );
-
-  if (!destino || destino.dataset.carregado === 'sim') {
-    return;
-  }
-
-  destino.dataset.carregado = 'sim';
-
-  carregarScriptTradingViewV673()
-    .then(function() {
-      destino.innerHTML = '';
-
-      const tickers = document.createElement(
-        'tv-tickers'
-      );
-
-      tickers.setAttribute(
-        'symbols',
-        [
-          'BMFBOVESPA:BGI1!',
-          'BMFBOVESPA:BGIN2026',
-          'BMFBOVESPA:BGIQ2026',
-          'BMFBOVESPA:BGIU2026',
-          'BMFBOVESPA:BGIV2026',
-          'BMFBOVESPA:BGIX2026',
-          'BMFBOVESPA:BGIZ2026'
-        ].join(',')
-      );
-
-      tickers.setAttribute(
-        'direction',
-        'vertical'
-      );
-
-      tickers.setAttribute(
-        'item-size',
-        'compact'
-      );
-
-      tickers.setAttribute('hide-chart', '');
-      tickers.setAttribute('color-theme', 'light');
-      tickers.setAttribute('locale', 'br');
-
-      destino.appendChild(tickers);
-    })
-    .catch(function() {
-      destino.innerHTML = `
-        <div class="mercado-erro-v673">
-          Não foi possível carregar as cotações neste momento.
-          Verifique a conexão e atualize a página.
-        </div>
-      `;
-    });
-}
-
-function carregarScriptTradingViewV673() {
-  if (
-    window.customElements &&
-    customElements.get('tv-tickers')
-  ) {
-    return Promise.resolve();
-  }
-
-  const existente = document.querySelector(
-    'script[data-tradingview-tickers-v673]'
-  );
-
-  if (existente) {
-    return new Promise(function(resolve, reject) {
-      const limite = Date.now() + 12000;
-
-      function verificar() {
-        if (
-          window.customElements &&
-          customElements.get('tv-tickers')
-        ) {
-          resolve();
-          return;
-        }
-
-        if (Date.now() >= limite) {
-          reject(
-            new Error('Tempo limite do TradingView.')
-          );
-          return;
-        }
-
-        window.setTimeout(verificar, 250);
-      }
-
-      verificar();
-    });
-  }
-
-  return new Promise(function(resolve, reject) {
-    const script = document.createElement('script');
-
-    script.type = 'module';
-    script.src =
-      'https://widgets.tradingview-widget.com/' +
-      'w/en/tv-tickers.js';
-
-    script.dataset.tradingviewTickersV673 = 'sim';
-
-    script.onload = function() {
-      if (
-        window.customElements &&
-        customElements.get('tv-tickers')
-      ) {
-        resolve();
-        return;
-      }
-
-      customElements
-        .whenDefined('tv-tickers')
-        .then(resolve)
-        .catch(reject);
-    };
-
-    script.onerror = reject;
-
-    document.head.appendChild(script);
-  });
-}
 
 function instalarProtocoloV652() {
   window.preencherProtocoloSanitario =
