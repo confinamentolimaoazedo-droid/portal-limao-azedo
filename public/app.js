@@ -963,6 +963,89 @@ function obterRelatorioAtual() {
     ? sanidade.tratamentos
     : [];
 
+  const consumoAutomacao =
+    dados.consumoAutomacao || null;
+
+  const tratosDoDia =
+    dados.tratosDoDia || {
+      quantidadeRealizada: 0,
+      totalPrevisto: 0,
+      tratos: []
+    };
+
+  const historicoTratos =
+    dados.historicoTratos || {
+      quantidadeDias: 0,
+      dias: [],
+      acumulado: {}
+    };
+
+  const diasTratos = Array.isArray(
+    historicoTratos.dias
+  )
+    ? historicoTratos.dias
+    : [];
+
+  const ultimosDoisDiasTratos =
+    diasTratos.slice(0, 2);
+
+  let totalTratosAcumuladoKg = converterNumero(
+    historicoTratos &&
+    historicoTratos.acumulado
+      ? historicoTratos.acumulado.totalKg
+      : 0
+  );
+
+  if (totalTratosAcumuladoKg <= 0) {
+    diasTratos.forEach(function(dia) {
+      const tratos = dia && Array.isArray(dia.tratos)
+        ? dia.tratos
+        : [];
+
+      tratos.forEach(function(trato) {
+        totalTratosAcumuladoKg += converterNumero(
+          trato.pesoDescarregadoKg
+        );
+      });
+    });
+  }
+
+  let totalPorCabecaKg = converterNumero(
+    historicoTratos &&
+    historicoTratos.acumulado
+      ? historicoTratos.acumulado.totalPorCabecaKg
+      : 0
+  );
+
+  if (totalPorCabecaKg <= 0) {
+    const cabecas = converterNumero(
+      dados.cabecasAtuais || dados.cabecasIniciais
+    );
+
+    totalPorCabecaKg = cabecas > 0
+      ? totalTratosAcumuladoKg / cabecas
+      : 0;
+  }
+
+  const diasComRegistro = converterNumero(
+    historicoTratos &&
+    historicoTratos.acumulado
+      ? historicoTratos.acumulado.diasComRegistro
+      : historicoTratos.quantidadeDias
+  ) || diasTratos.length;
+
+  const mortalidadeHistorico = Array.isArray(
+    dados.mortalidadeHistorico
+  )
+    ? dados.mortalidadeHistorico
+    : [];
+
+  const movimentacoes = Array.isArray(
+    dados.movimentacoes
+  )
+    ? dados.movimentacoes
+    : [];
+
   const rendimento = Number(
     document.getElementById(
       'rendimentoCarcaca'
@@ -981,6 +1064,15 @@ function obterRelatorioAtual() {
     sanidade,
     protocolo,
     tratamentos,
+    consumoAutomacao,
+    tratosDoDia,
+    historicoTratos,
+    ultimosDoisDiasTratos,
+    totalTratosAcumuladoKg,
+    totalPorCabecaKg,
+    diasComRegistro,
+    mortalidadeHistorico,
+    movimentacoes,
     rendimento,
     pesoFinal,
     pesoCarcaca,
@@ -1058,7 +1150,16 @@ function montarHtmlPDF(relatorio) {
             <td>${escaparHtml(item.data || '—')}</td>
             <td>${escaparHtml(item.produto || '—')}</td>
             <td>${escaparHtml(
-              primeiroValor(item, ['quantidadeAnimais','QuantidadeAnimais','QuantidadedeAnimais','quantidade'], '0')
+              primeiroValor(
+                item,
+                [
+                  'quantidadeAnimais',
+                  'QuantidadeAnimais',
+                  'QuantidadedeAnimais',
+                  'quantidade'
+                ],
+                '0'
+              )
             )}</td>
             <td>${escaparHtml(
               adicionarUnidade(
@@ -1067,15 +1168,154 @@ function montarHtmlPDF(relatorio) {
               )
             )}</td>
             <td>${escaparHtml(
-              item.custoTotal || 'R$ 0,00'
+              adicionarUnidade(
+                item.volumeTotal,
+                'ml'
+              )
             )}</td>
             <td>${escaparHtml(
               item.motivo || '—'
             )}</td>
+            <td>${escaparHtml(
+              item.observacoes || '—'
+            )}</td>
           </tr>
         `;
       }).join('')
-    : '<tr><td colspan="6">Nenhum tratamento registrado.</td></tr>';
+    : '<tr><td colspan="7">Nenhum tratamento registrado.</td></tr>';
+
+  const consumo = relatorio.consumoAutomacao;
+
+  const consumoLinhas = consumo
+    ? [
+        ['Data do consumo', consumo.data || '—'],
+        ['Atualizado em', consumo.atualizadoEm || '—'],
+        ['Dieta', consumo.dieta || dados.dieta || '—'],
+        [
+          'Consumo natural por cabeça',
+          `${formatarNumero(
+            converterNumero(
+              consumo.consumoNaturalPorCabecaKg
+            ),
+            3
+          )} kg/cab`
+        ],
+        [
+          'Consumo de MS por cabeça',
+          `${formatarNumero(
+            converterNumero(
+              consumo.consumoMSPorCabecaKg
+            ),
+            3
+          )} kg/cab`
+        ],
+        [
+          'Consumo de MS total',
+          `${formatarNumero(
+            converterNumero(
+              consumo.consumoMSTotalKg
+            ),
+            3
+          )} kg`
+        ],
+        [
+          'Consumo MS / peso vivo',
+          `${formatarNumero(
+            converterNumero(
+              consumo.consumoMSPVPct
+            ),
+            2
+          )}%`
+        ],
+        [
+          'Peso projetado',
+          `${formatarNumero(
+            converterNumero(
+              consumo.pesoProjetadoKg
+            ),
+            2
+          )} kg`
+        ],
+        ['Dias do lote', consumo.diasLote || '—']
+      ]
+    : [['Consumo diário', 'Sem registro automático disponível.']];
+
+  const tratosRecentesHtml =
+    relatorio.ultimosDoisDiasTratos.length
+      ? relatorio.ultimosDoisDiasTratos.map(function(dia) {
+          const tratos = Array.isArray(dia.tratos)
+            ? dia.tratos
+            : [];
+
+          const totalDia = tratos.reduce(
+            function(total, trato) {
+              return total + converterNumero(
+                trato.pesoDescarregadoKg
+              );
+            },
+            0
+          );
+
+          const linhas = tratos.length
+            ? tratos.map(function(trato) {
+                return `
+                  <tr>
+                    <td>${escaparHtml(dia.data || trato.data || '—')}</td>
+                    <td>${escaparHtml(trato.numeroTrato || '—')}</td>
+                    <td>${escaparHtml(trato.horaInicio || '—')}</td>
+                    <td>${escaparHtml(trato.horaFim || '—')}</td>
+                    <td>${escaparHtml(trato.dieta || '—')}</td>
+                    <td>${escaparHtml(
+                      `${formatarNumero(
+                        converterNumero(
+                          trato.pesoDescarregadoKg
+                        ),
+                        3
+                      )} kg`
+                    )}</td>
+                  </tr>
+                `;
+              }).join('')
+            : `
+                <tr>
+                  <td colspan="6">
+                    Nenhum trato detalhado registrado.
+                  </td>
+                </tr>
+              `;
+
+          return `
+            ${linhas}
+            <tr class="total-dia">
+              <td colspan="5">
+                Total fornecido em ${escaparHtml(dia.data || '—')}
+              </td>
+              <td>
+                ${escaparHtml(
+                  `${formatarNumero(totalDia, 3)} kg`
+                )}
+              </td>
+            </tr>
+          `;
+        }).join('')
+      : '<tr><td colspan="6">Nenhum trato recente registrado.</td></tr>';
+
+  const movimentacoesHtml =
+    relatorio.movimentacoes.length
+      ? relatorio.movimentacoes.map(function(item) {
+          return `
+            <tr>
+              <td>${escaparHtml(item.data || '—')}</td>
+              <td>${escaparHtml(item.tipo || '—')}</td>
+              <td>${escaparHtml(item.quantidade || 0)}</td>
+              <td>${escaparHtml(item.curralAnterior || '—')}</td>
+              <td>${escaparHtml(item.curralNovo || '—')}</td>
+              <td>${escaparHtml(item.motivo || '—')}</td>
+              <td>${escaparHtml(item.observacoes || '—')}</td>
+            </tr>
+          `;
+        }).join('')
+      : '<tr><td colspan="7">Nenhuma movimentação registrada.</td></tr>';
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -1086,7 +1326,7 @@ function montarHtmlPDF(relatorio) {
   <style>
     @page {
       size: A4;
-      margin: 13mm;
+      margin: 11mm;
     }
 
     * {
@@ -1097,8 +1337,8 @@ function montarHtmlPDF(relatorio) {
       margin: 0;
       color: #1f2a24;
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 10px;
-      line-height: 1.4;
+      font-size: 9.5px;
+      line-height: 1.35;
     }
 
     header {
@@ -1160,7 +1400,7 @@ function montarHtmlPDF(relatorio) {
 
     section {
       margin-bottom: 13px;
-      break-inside: avoid;
+      break-inside: auto;
     }
 
     h2 {
@@ -1169,11 +1409,20 @@ function montarHtmlPDF(relatorio) {
       border-bottom: 1px solid #dfe9e3;
       color: #075f35;
       font-size: 13px;
+      break-after: avoid;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
+    }
+
+    thead {
+      display: table-header-group;
+    }
+
+    tr {
+      break-inside: avoid;
     }
 
     td,
@@ -1194,6 +1443,12 @@ function montarHtmlPDF(relatorio) {
       width: 47%;
       background: #f7faf8;
       color: #5d6961;
+      font-weight: 700;
+    }
+
+    .total-dia td {
+      background: #edf7f1;
+      color: #075f35;
       font-weight: 700;
     }
 
@@ -1270,6 +1525,7 @@ function montarHtmlPDF(relatorio) {
         2
       )} kg`
     ],
+    ['Data do peso estimado', dados.dataPesoEstimado || '—'],
     [
       'GMD projetado',
       `${formatarNumero(
@@ -1288,7 +1544,7 @@ function montarHtmlPDF(relatorio) {
       'Consumo de MS',
       `${formatarNumero(
         converterNumero(dados.consumoMS),
-        2
+        3
       )} kg`
     ],
     ['Consumo sobre peso vivo', dados.consumoPV],
@@ -1323,6 +1579,56 @@ function montarHtmlPDF(relatorio) {
     ]
   ])}
 
+  ${tabelaPdf('Consumo diário', consumoLinhas)}
+
+  ${tabelaPdf('Acumulado de tratos do lote', [
+    [
+      'Total fornecido acumulado',
+      `${formatarNumero(
+        relatorio.totalTratosAcumuladoKg,
+        3
+      )} kg`
+    ],
+    [
+      'Acumulado por cabeça',
+      `${formatarNumero(
+        relatorio.totalPorCabecaKg,
+        3
+      )} kg/cab`
+    ],
+    [
+      'Dias com registro de trato',
+      relatorio.diasComRegistro
+    ],
+    [
+      'Tratos realizados hoje',
+      relatorio.tratosDoDia.quantidadeRealizada || 0
+    ],
+    [
+      'Tratos previstos hoje',
+      relatorio.tratosDoDia.totalPrevisto || 0
+    ]
+  ])}
+
+  <section>
+    <h2>Tratos - 2 últimos dias</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Trato</th>
+          <th>Início</th>
+          <th>Fim</th>
+          <th>Dieta</th>
+          <th>Fornecido</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tratosRecentesHtml}
+      </tbody>
+    </table>
+  </section>
+
   ${tabelaPdf('Resumo sanitário', [
     ['Animais doentes', dados.animaisDoentes],
     ['Animais na enfermaria', dados.animaisEnfermaria],
@@ -1333,18 +1639,6 @@ function montarHtmlPDF(relatorio) {
     [
       'Animais tratados',
       sanidade.totalAnimaisTratados || 0
-    ],
-    [
-      'Custo dos tratamentos',
-      sanidade.custoTotal || 'R$ 0,00'
-    ],
-    [
-      'Protocolo por animal',
-      dados.custoProtocoloPorAnimal
-    ],
-    [
-      'Protocolo total',
-      dados.custoProtocoloTotal
     ]
   ])}
 
@@ -1373,8 +1667,9 @@ function montarHtmlPDF(relatorio) {
           <th>Produto</th>
           <th>Animais</th>
           <th>Dose</th>
-          <th>Custo</th>
+          <th>Volume</th>
           <th>Motivo</th>
+          <th>Observações</th>
         </tr>
       </thead>
       <tbody>
@@ -1383,11 +1678,30 @@ function montarHtmlPDF(relatorio) {
     </table>
   </section>
 
+  <section>
+    <h2>Movimentações do lote</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Tipo</th>
+          <th>Quantidade</th>
+          <th>Curral anterior</th>
+          <th>Curral novo</th>
+          <th>Motivo</th>
+          <th>Observações</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${movimentacoesHtml}
+      </tbody>
+    </table>
+  </section>
+
   <footer>
     Relatório gerado em ${escaparHtml(relatorio.geradoEm)}.
-    Pesos e resultados são estimativas.
+    Pesos, consumo e projeções são estimativas quando não houver pesagem final.
   </footer>
-
 </body>
 </html>`;
 }
@@ -1443,6 +1757,7 @@ function exportarLoteExcel() {
 function montarExcelXml(relatorio) {
   const dados = relatorio.dados;
   const sanidade = relatorio.sanidade;
+  const consumo = relatorio.consumoAutomacao;
 
   const identificacao = [
     linhaExcel('Cliente', dados.cliente),
@@ -1469,6 +1784,7 @@ function montarExcelXml(relatorio) {
   const desempenho = [
     linhaExcelNumero('Peso de entrada (kg)', dados.pesoEntrada),
     linhaExcelNumero('Peso estimado atual (kg)', dados.pesoEstimado),
+    linhaExcel('Data do peso estimado', dados.dataPesoEstimado),
     linhaExcelNumero('GMD projetado (kg/dia)', dados.gmdProjetado),
     linhaExcelNumero('Ganho total (kg)', dados.ganhoTotalKg),
     linhaExcelNumero('Consumo MS (kg)', dados.consumoMS),
@@ -1495,6 +1811,118 @@ function montarExcelXml(relatorio) {
     )
   ];
 
+  const consumoDiario = consumo
+    ? [
+        linhaExcel('Data do consumo', consumo.data),
+        linhaExcel('Atualizado em', consumo.atualizadoEm),
+        linhaExcel('Dieta', consumo.dieta || dados.dieta),
+        linhaExcelNumero(
+          'Consumo natural por cabeça (kg)',
+          consumo.consumoNaturalPorCabecaKg
+        ),
+        linhaExcelNumero(
+          'Consumo MS por cabeça (kg)',
+          consumo.consumoMSPorCabecaKg
+        ),
+        linhaExcelNumero(
+          'Consumo MS total (kg)',
+          consumo.consumoMSTotalKg
+        ),
+        linhaExcelNumero(
+          'Consumo MS / PV (%)',
+          consumo.consumoMSPVPct
+        ),
+        linhaExcelNumero(
+          'Peso projetado (kg)',
+          consumo.pesoProjetadoKg
+        ),
+        linhaExcelNumero(
+          'Dias do lote',
+          consumo.diasLote
+        )
+      ]
+    : [
+        linhaExcel(
+          'Consumo diário',
+          'Sem registro automático disponível.'
+        )
+      ];
+
+  consumoDiario.push(
+    linhaExcelNumero(
+      'Total fornecido acumulado (kg)',
+      relatorio.totalTratosAcumuladoKg
+    )
+  );
+  consumoDiario.push(
+    linhaExcelNumero(
+      'Acumulado por cabeça (kg/cab)',
+      relatorio.totalPorCabecaKg
+    )
+  );
+  consumoDiario.push(
+    linhaExcelNumero(
+      'Dias com registro de trato',
+      relatorio.diasComRegistro
+    )
+  );
+
+  const tratos = [
+    linhaCabecalhoExcel([
+      'Data',
+      'Trato',
+      'Hora início',
+      'Hora fim',
+      'Dieta',
+      'Peso fornecido (kg)',
+      'Total previsto no dia'
+    ])
+  ];
+
+  relatorio.ultimosDoisDiasTratos.forEach(function(dia) {
+    const lista = Array.isArray(dia.tratos)
+      ? dia.tratos
+      : [];
+
+    lista.forEach(function(trato) {
+      tratos.push(`
+        <Row>
+          ${celulaExcel(dia.data || trato.data)}
+          ${celulaExcelNumero(trato.numeroTrato)}
+          ${celulaExcel(trato.horaInicio)}
+          ${celulaExcel(trato.horaFim)}
+          ${celulaExcel(trato.dieta)}
+          ${celulaExcelNumero(trato.pesoDescarregadoKg)}
+          ${celulaExcelNumero(
+            trato.totalTratosPrevistos ||
+            dia.totalPrevisto
+          )}
+        </Row>
+      `);
+    });
+
+    const totalDia = lista.reduce(
+      function(total, trato) {
+        return total + converterNumero(
+          trato.pesoDescarregadoKg
+        );
+      },
+      0
+    );
+
+    tratos.push(`
+      <Row>
+        ${celulaExcel(`TOTAL ${dia.data || ''}`)}
+        ${celulaExcel('')}
+        ${celulaExcel('')}
+        ${celulaExcel('')}
+        ${celulaExcel('')}
+        ${celulaExcelNumero(totalDia)}
+        ${celulaExcel('')}
+      </Row>
+    `);
+  });
+
   const sanitario = [
     linhaExcelNumero('Animais doentes', dados.animaisDoentes),
     linhaExcelNumero(
@@ -1503,23 +1931,11 @@ function montarExcelXml(relatorio) {
     ),
     linhaExcelNumero(
       'Tratamentos realizados',
-      sanidade.quantidadeRegistros
+      sanidade.quantidadeRegistros || 0
     ),
     linhaExcelNumero(
       'Animais tratados',
-      sanidade.totalAnimaisTratados
-    ),
-    linhaExcel(
-      'Custo dos tratamentos',
-      sanidade.custoTotal
-    ),
-    linhaExcel(
-      'Protocolo por animal',
-      dados.custoProtocoloPorAnimal
-    ),
-    linhaExcel(
-      'Protocolo total',
-      dados.custoProtocoloTotal
+      sanidade.totalAnimaisTratados || 0
     )
   ];
 
@@ -1550,7 +1966,6 @@ function montarExcelXml(relatorio) {
       'Animais',
       'Dose por animal (ml)',
       'Volume total (ml)',
-      'Custo total',
       'Motivo',
       'Observações'
     ])
@@ -1564,7 +1979,32 @@ function montarExcelXml(relatorio) {
         ${celulaExcelNumero(item.quantidadeAnimais)}
         ${celulaExcelNumero(item.dosePorAnimal)}
         ${celulaExcelNumero(item.volumeTotal)}
-        ${celulaExcel(item.custoTotal)}
+        ${celulaExcel(item.motivo)}
+        ${celulaExcel(item.observacoes)}
+      </Row>
+    `);
+  });
+
+  const movimentacoes = [
+    linhaCabecalhoExcel([
+      'Data',
+      'Tipo',
+      'Quantidade',
+      'Curral anterior',
+      'Curral novo',
+      'Motivo',
+      'Observações'
+    ])
+  ];
+
+  relatorio.movimentacoes.forEach(function(item) {
+    movimentacoes.push(`
+      <Row>
+        ${celulaExcel(item.data)}
+        ${celulaExcel(item.tipo)}
+        ${celulaExcelNumero(item.quantidade)}
+        ${celulaExcel(item.curralAnterior)}
+        ${celulaExcel(item.curralNovo)}
         ${celulaExcel(item.motivo)}
         ${celulaExcel(item.observacoes)}
       </Row>
@@ -1588,9 +2028,12 @@ function montarExcelXml(relatorio) {
   ${abaExcel('Identificacao', identificacao, 2)}
   ${abaExcel('Confinamento', confinamento, 2)}
   ${abaExcel('Desempenho', desempenho, 2)}
+  ${abaExcel('Consumo', consumoDiario, 2)}
+  ${abaExcel('Tratos', tratos, 7)}
   ${abaExcel('Sanidade', sanitario, 2)}
   ${abaExcel('Protocolo', protocolo, 4)}
-  ${abaExcel('Tratamentos', tratamentos, 8)}
+  ${abaExcel('Tratamentos', tratamentos, 7)}
+  ${abaExcel('Movimentacoes', movimentacoes, 7)}
 </Workbook>`;
 }
 

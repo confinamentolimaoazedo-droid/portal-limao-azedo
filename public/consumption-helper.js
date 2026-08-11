@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Portal do Cliente — V6.7.5
+ * Portal do Cliente — V6.7.6
  *
  * Atualizações:
  * - Consumo diário com data e horário;
@@ -9,7 +9,7 @@
  * - transforma os indicadores antigos no card 02 "Resumo do lote";
  * - exibe Consumo de MS com 3 casas decimais no resumo;
  * - preserva protocolo sanitário e custos;
- * - mostra somente os 2 últimos dias de tratos e o total acumulado do lote;
+ * - adiciona Histórico de Tratos agrupado por data;
  * - mantém o portal sem módulo de cotações externas.
  */
 
@@ -424,48 +424,6 @@ function instalarEstilosV652() {
 
 
 
-    .tratos-acumulado-v675 {
-      margin-top: 14px;
-      padding: 16px;
-      border-radius: 16px;
-      background: var(--verde-claro, #edf7f1);
-      border: 1px solid rgba(8,120,62,.13);
-    }
-
-    .tratos-acumulado-v675 span,
-    .tratos-acumulado-v675 small {
-      display: block;
-      color: var(--muted, #68756d);
-    }
-
-    .tratos-acumulado-v675 strong {
-      display: block;
-      margin: 5px 0 3px;
-      color: var(--verde-escuro, #075f35);
-      font-size: 26px;
-    }
-
-    .historico-dia-cabecalho-v662 > div:first-child {
-      display: grid;
-      gap: 3px;
-    }
-
-    .total-dia-v675 {
-      display: grid;
-      gap: 2px;
-      text-align: right;
-    }
-
-    .total-dia-v675 span {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-    }
-
-    .total-dia-v675 strong {
-      font-size: 14px;
-    }
-
     @media (min-width: 680px) {
       #resumoLoteCardV652 .grade-indicadores {
         grid-template-columns: repeat(4, minmax(0,1fr));
@@ -565,10 +523,15 @@ function instalarCardConsumoV652() {
 
 
 function instalarCardTratosV66() {
-  if (document.getElementById('tratosDoDiaCardV66')) return;
+  if (document.getElementById('tratosDoDiaCardV66')) {
+    return;
+  }
 
   const resumo = document.getElementById('resumoLoteCardV652');
-  if (!resumo) return;
+
+  if (!resumo) {
+    return;
+  }
 
   const card = document.createElement('section');
   card.id = 'tratosDoDiaCardV66';
@@ -577,141 +540,375 @@ function instalarCardTratosV66() {
   card.innerHTML = `
     <div class="cabecalho-card-v652">
       <div>
-        <span class="rotulo-v652">03. Tratos recentes</span>
-        <h3>Últimos 2 dias de fornecimento</h3>
+        <span class="rotulo-v652">03. Tratos do dia</span>
+        <h3>Fornecimento realizado</h3>
       </div>
-      <div class="icone-card-v652" aria-hidden="true">🥣</div>
+
+      <div class="icone-card-v652" aria-hidden="true">
+        🥣
+      </div>
     </div>
 
     <div class="tratos-resumo-v66">
-      <strong id="tratosResumoTituloV66">Nenhum trato registrado</strong>
+      <strong id="tratosResumoTituloV66">
+        Nenhum trato registrado
+      </strong>
+
       <span id="tratosResumoDataV66"></span>
     </div>
 
-    <div id="listaTratosV66" class="historico-tratos-v662">
-      <div class="tratos-vazio-v66">Aguardando importação do relatório de descarga.</div>
-    </div>
-
-    <div class="tratos-acumulado-v675">
-      <span>Total acumulado do lote</span>
-      <strong id="tratosTotalAcumuladoV675">—</strong>
-      <small id="tratosAcumuladoMetaV675">Somando todos os tratos registrados do lote</small>
+    <div
+      id="listaTratosV66"
+      class="lista-tratos-v66"
+    >
+      <div class="tratos-vazio-v66">
+        Aguardando importação do relatório de descarga.
+      </div>
     </div>
   `;
 
-  const consumo = document.getElementById('consumoAutomacaoCard');
-  if (consumo) consumo.insertAdjacentElement('afterend', card);
-  else resumo.insertAdjacentElement('afterend', card);
+  const consumo = document.getElementById(
+    'consumoAutomacaoCard'
+  );
+
+  if (consumo) {
+    consumo.insertAdjacentElement('afterend', card);
+  } else {
+    resumo.insertAdjacentElement('afterend', card);
+  }
 }
 
 function preencherTratosV66(dados) {
+  const resumo =
+    dados && dados.tratosDoDia
+      ? dados.tratosDoDia
+      : null;
+
   const lista = document.getElementById('listaTratosV66');
-  if (!lista) return;
 
-  const historico = dados && dados.historicoTratos ? dados.historicoTratos : null;
-  const todosDias = historico && Array.isArray(historico.dias) ? historico.dias : [];
-  const ultimosDias = todosDias.slice(0, 2);
-
-  if (!ultimosDias.length) {
-    definirTextoV652('tratosResumoTituloV66', 'Nenhum trato registrado');
-    definirTextoV652('tratosResumoDataV66', '');
-    definirTextoV652('tratosTotalAcumuladoV675', '0,000 kg');
-    definirTextoV652('tratosAcumuladoMetaV675', 'Nenhum fornecimento registrado');
-    lista.innerHTML = `<div class="tratos-vazio-v66">Nenhum trato foi importado para este lote.</div>`;
+  if (!lista) {
     return;
   }
 
-  const totalAcumulado = todosDias.reduce(function(total, dia) {
-    const tratos = Array.isArray(dia.tratos) ? dia.tratos : [];
-    return total + tratos.reduce(function(subtotal, trato) {
-      return subtotal + Number(trato.pesoDescarregadoKg || 0);
-    }, 0);
-  }, 0);
+  const tratos =
+    resumo && Array.isArray(resumo.tratos)
+      ? resumo.tratos
+      : [];
 
-  const totalUltimosDoisDias = ultimosDias.reduce(function(total, dia) {
-    const tratos = Array.isArray(dia.tratos) ? dia.tratos : [];
-    return total + tratos.length;
-  }, 0);
+  const realizados = Number(
+    resumo && resumo.quantidadeRealizada
+      ? resumo.quantidadeRealizada
+      : tratos.length
+  );
+
+  const previstos = Number(
+    resumo && resumo.totalPrevisto
+      ? resumo.totalPrevisto
+      : 0
+  );
+
+  if (!tratos.length) {
+    definirTextoV652(
+      'tratosResumoTituloV66',
+      'Nenhum trato registrado'
+    );
+
+    definirTextoV652(
+      'tratosResumoDataV66',
+      ''
+    );
+
+    lista.innerHTML = `
+      <div class="tratos-vazio-v66">
+        Nenhum trato foi importado para hoje.
+      </div>
+    `;
+
+    return;
+  }
 
   definirTextoV652(
     'tratosResumoTituloV66',
-    `${totalUltimosDoisDias} trato(s) nos últimos ${ultimosDias.length} dia(s)`
+    previstos > 0
+      ? `${realizados} de ${previstos} trato(s) realizado(s)`
+      : `${realizados} trato(s) realizado(s)`
   );
+
   definirTextoV652(
     'tratosResumoDataV66',
-    ultimosDias.map(function(dia) { return dia.data || ''; }).filter(Boolean).join(' • ')
-  );
-  definirTextoV652(
-    'tratosTotalAcumuladoV675',
-    `${totalAcumulado.toLocaleString('pt-BR', {minimumFractionDigits: 3, maximumFractionDigits: 3})} kg`
-  );
-  definirTextoV652(
-    'tratosAcumuladoMetaV675',
-    `${todosDias.length} dia(s) com fornecimento registrado no lote`
+    tratos[0].data || ''
   );
 
-  lista.innerHTML = ultimosDias.map(function(dia) {
-    const tratos = Array.isArray(dia.tratos) ? dia.tratos : [];
-    const realizados = Number(dia.quantidadeRealizada || tratos.length);
-    const previstos = Number(dia.totalPrevisto || 0);
-    const totalDia = tratos.reduce(function(total, trato) {
-      return total + Number(trato.pesoDescarregadoKg || 0);
-    }, 0);
+  lista.innerHTML = tratos
+    .map(function(trato) {
+      const numeroTrato = Number(trato.numeroTrato || 0);
+      const totalPrevisto = Number(
+        trato.totalTratosPrevistos || previstos || 0
+      );
 
-    return `
-      <section class="historico-dia-v662">
-        <div class="historico-dia-cabecalho-v662">
-          <div>
-            <strong>${escaparHtmlV652(dia.data || '—')}</strong>
-            <span>${escaparHtmlV652(realizados)}${previstos ? ` de ${escaparHtmlV652(previstos)}` : ''} trato(s)</span>
+      const horarioInicio = formatarHoraCurtaV66(
+        trato.horaInicio
+      );
+
+      const horarioFim = formatarHoraCurtaV66(
+        trato.horaFim
+      );
+
+      const horario = [
+        horarioInicio,
+        horarioFim
+          ? `às ${horarioFim}`
+          : ''
+      ].filter(Boolean).join(' ');
+
+      const peso = Number(
+        trato.pesoDescarregadoKg || 0
+      ).toLocaleString('pt-BR', {
+        minimumFractionDigits: 3,
+        maximumFractionDigits: 3
+      });
+
+      return `
+        <article class="trato-item-v66">
+          <div class="trato-numero-v66">
+            ${escaparHtmlV652(numeroTrato || '—')}
           </div>
-          <div class="total-dia-v675">
-            <span>Total do dia</span>
-            <strong>${escaparHtmlV652(totalDia.toLocaleString('pt-BR', {minimumFractionDigits: 3, maximumFractionDigits: 3}))} kg</strong>
+
+          <div class="trato-conteudo-v66">
+            <div class="trato-topo-v66">
+              <strong>
+                Trato ${escaparHtmlV652(numeroTrato || '—')}
+                ${totalPrevisto
+                  ? ` de ${escaparHtmlV652(totalPrevisto)}`
+                  : ''}
+              </strong>
+
+              <span>
+                ${escaparHtmlV652(horario || 'Horário não informado')}
+              </span>
+            </div>
+
+            <div class="trato-detalhes-v66">
+              <span>
+                Dieta:
+                <b>${escaparHtmlV652(trato.dieta || '—')}</b>
+              </span>
+
+              <span>
+                Fornecido:
+                <b>${escaparHtmlV652(peso)} kg</b>
+              </span>
+            </div>
           </div>
-        </div>
-        <div class="historico-dia-lista-v662">
-          ${tratos.map(function(trato) {
-            const inicio = formatarHoraCurtaV66(trato.horaInicio);
-            const fim = formatarHoraCurtaV66(trato.horaFim);
-            const horario = [inicio, fim ? `às ${fim}` : ''].filter(Boolean).join(' ');
-            const peso = Number(trato.pesoDescarregadoKg || 0).toLocaleString('pt-BR', {minimumFractionDigits: 3, maximumFractionDigits: 3});
-            return `
-              <article class="historico-trato-item-v662">
-                <div class="historico-trato-numero-v662">${escaparHtmlV652(trato.numeroTrato || '—')}</div>
-                <div class="historico-trato-conteudo-v662">
-                  <div class="historico-trato-topo-v662">
-                    <span>Trato ${escaparHtmlV652(trato.numeroTrato || '—')}</span>
-                    <span>${escaparHtmlV652(horario || '—')}</span>
-                  </div>
-                  <div class="historico-trato-detalhes-v662">
-                    <span>Dieta: <b>${escaparHtmlV652(trato.dieta || '—')}</b></span>
-                    <span>Fornecido: <b>${escaparHtmlV652(peso)} kg</b></span>
-                  </div>
-                </div>
-              </article>`;
-          }).join('')}
-        </div>
-      </section>`;
-  }).join('');
+        </article>
+      `;
+    })
+    .join('');
 }
 
 function formatarHoraCurtaV66(valor) {
   const texto = String(valor || '').trim();
-  const encontrado = texto.match(/(\d{2}):(\d{2})(?::\d{2})?/);
-  if (!encontrado) return texto;
+
+  const encontrado = texto.match(
+    /(\d{2}):(\d{2})(?::\d{2})?/
+  );
+
+  if (!encontrado) {
+    return texto;
+  }
+
   return `${encontrado[1]}:${encontrado[2]}`;
 }
 
-// Histórico antigo deixa de ser exibido. O card acima já mostra os 2 últimos dias.
+
 function instalarHistoricoTratosV662() {
-  const antigo = document.getElementById('historicoTratosCardV662');
-  if (antigo) antigo.remove();
+  if (
+    document.getElementById(
+      'historicoTratosCardV662'
+    )
+  ) {
+    return;
+  }
+
+  const tratosHoje = document.getElementById(
+    'tratosDoDiaCardV66'
+  );
+
+  if (!tratosHoje) {
+    return;
+  }
+
+  const card = document.createElement('section');
+  card.id = 'historicoTratosCardV662';
+  card.className = 'cartao historico-tratos-v662-card';
+
+  card.innerHTML = `
+    <div class="cabecalho-card-v652">
+      <div>
+        <span class="rotulo-v652">
+          04. Histórico de tratos
+        </span>
+        <h3>Fornecimentos anteriores</h3>
+      </div>
+
+      <div
+        class="icone-card-v652"
+        aria-hidden="true"
+      >
+        🕒
+      </div>
+    </div>
+
+    <div
+      id="historicoTratosListaV662"
+      class="historico-tratos-v662"
+    >
+      <div class="historico-vazio-v662">
+        Nenhum histórico de trato disponível.
+      </div>
+    </div>
+  `;
+
+  tratosHoje.insertAdjacentElement(
+    'afterend',
+    card
+  );
 }
 
-function preencherHistoricoTratosV662() {
-  // Mantido por compatibilidade com versões anteriores.
+function preencherHistoricoTratosV662(dados) {
+  const container = document.getElementById(
+    'historicoTratosListaV662'
+  );
+
+  if (!container) {
+    return;
+  }
+
+  const historico =
+    dados && dados.historicoTratos
+      ? dados.historicoTratos
+      : null;
+
+  const dias =
+    historico && Array.isArray(historico.dias)
+      ? historico.dias
+      : [];
+
+  if (!dias.length) {
+    container.innerHTML = `
+      <div class="historico-vazio-v662">
+        Nenhum histórico de trato disponível.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = dias
+    .map(function(dia) {
+      const tratos = Array.isArray(dia.tratos)
+        ? dia.tratos
+        : [];
+
+      const realizados = Number(
+        dia.quantidadeRealizada || tratos.length
+      );
+
+      const previstos = Number(
+        dia.totalPrevisto || 0
+      );
+
+      return `
+        <section class="historico-dia-v662">
+          <div class="historico-dia-cabecalho-v662">
+            <strong>
+              ${escaparHtmlV652(dia.data || '—')}
+            </strong>
+
+            <span>
+              ${escaparHtmlV652(realizados)}
+              ${previstos
+                ? ` de ${escaparHtmlV652(previstos)}`
+                : ''}
+              trato(s)
+            </span>
+          </div>
+
+          <div class="historico-dia-lista-v662">
+            ${tratos.map(function(trato) {
+              const inicio =
+                formatarHoraCurtaV66(
+                  trato.horaInicio
+                );
+
+              const fim =
+                formatarHoraCurtaV66(
+                  trato.horaFim
+                );
+
+              const horario = [
+                inicio,
+                fim ? `às ${fim}` : ''
+              ].filter(Boolean).join(' ');
+
+              const peso = Number(
+                trato.pesoDescarregadoKg || 0
+              ).toLocaleString('pt-BR', {
+                minimumFractionDigits: 3,
+                maximumFractionDigits: 3
+              });
+
+              return `
+                <article class="historico-trato-item-v662">
+                  <div class="historico-trato-numero-v662">
+                    ${escaparHtmlV652(
+                      trato.numeroTrato || '—'
+                    )}
+                  </div>
+
+                  <div class="historico-trato-conteudo-v662">
+                    <div class="historico-trato-topo-v662">
+                      <span>
+                        Trato
+                        ${escaparHtmlV652(
+                          trato.numeroTrato || '—'
+                        )}
+                      </span>
+
+                      <span>
+                        ${escaparHtmlV652(
+                          horario || '—'
+                        )}
+                      </span>
+                    </div>
+
+                    <div class="historico-trato-detalhes-v662">
+                      <span>
+                        Dieta:
+                        <b>
+                          ${escaparHtmlV652(
+                            trato.dieta || '—'
+                          )}
+                        </b>
+                      </span>
+
+                      <span>
+                        Fornecido:
+                        <b>
+                          ${escaparHtmlV652(peso)} kg
+                        </b>
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              `;
+            }).join('')}
+          </div>
+        </section>
+      `;
+    })
+    .join('');
 }
+
 
 
 function instalarProtocoloV652() {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-limao-azedo-v6-7-4';
+const CACHE_NAME = 'portal-limao-azedo-v6-7-6-export';
 
 const ARQUIVOS = [
   '/',
