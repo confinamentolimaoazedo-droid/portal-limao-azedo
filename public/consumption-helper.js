@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Portal do Cliente — V6.8.4
+ * Portal do Cliente — V6.8.6
  *
  * Atualizações:
  * - Consumo diário com data e horário;
@@ -1241,3 +1241,301 @@ function formatarNumeroV682(valor) {
     }
   );
 }
+
+
+/* =========================================================
+ * V6.8.6 — PDF / EXCEL
+ * Inclui frete, situação dos pagamentos e resumo das
+ * cobranças visíveis ao cliente.
+ * ======================================================= */
+
+(function instalarExportacoesFinanceirasV686() {
+  const htmlPdfOriginal =
+    typeof window.montarHtmlPDF === 'function'
+      ? window.montarHtmlPDF
+      : null;
+
+  const excelOriginal =
+    typeof window.montarExcelXml === 'function'
+      ? window.montarExcelXml
+      : null;
+
+  if (htmlPdfOriginal) {
+    window.montarHtmlPDF = function(relatorio) {
+      let html =
+        htmlPdfOriginal(relatorio);
+
+      const dados =
+        relatorio && relatorio.dados
+          ? relatorio.dados
+          : {};
+
+      const cobrancas =
+        dados.cobrancas || {};
+
+      const frete =
+        dados.frete ||
+        cobrancas.frete ||
+        null;
+
+      const protocolo =
+        cobrancas.protocolo || {};
+
+      const sanidade =
+        cobrancas.sanidade || {};
+
+      const linhasCobrancas = [
+        [
+          'Protocolo sanitário',
+          `${protocolo.valor || dados.custoProtocoloTotal || 'R$ 0,00'} • ${protocolo.status || (protocolo.pago ? 'Pago' : 'Pendente')}`
+        ],
+        [
+          'Sanidade',
+          `${sanidade.valor || dados.sanidade?.custoTotal || 'R$ 0,00'} • ${sanidade.status || (sanidade.pago ? 'Pago' : 'Pendente')}`
+        ]
+      ];
+
+      if (frete && frete.ativo !== false) {
+        linhasCobrancas.push([
+          'Frete',
+          `${frete.total || 'R$ 0,00'} • ${frete.status || (frete.pago ? 'Pago' : 'Pendente')}`
+        ]);
+      }
+
+      linhasCobrancas.push(
+        [
+          'Total das cobranças',
+          cobrancas.total || 'R$ 0,00'
+        ],
+        [
+          'Total pago',
+          cobrancas.totalPago || 'R$ 0,00'
+        ],
+        [
+          'Saldo pendente',
+          cobrancas.saldo || 'R$ 0,00'
+        ]
+      );
+
+      const blocoCobrancas =
+        typeof window.tabelaPdf === 'function'
+          ? window.tabelaPdf(
+              'Resumo das cobranças',
+              linhasCobrancas
+            )
+          : '';
+
+      let blocoFrete = '';
+
+      if (frete && frete.ativo !== false) {
+        const distancia =
+          converterNumeroV652(
+            frete.distanciaKm
+          );
+
+        blocoFrete =
+          typeof window.tabelaPdf === 'function'
+            ? window.tabelaPdf(
+                'Frete do lote',
+                [
+                  [
+                    'Data do frete',
+                    frete.data || '—'
+                  ],
+                  [
+                    'Distância percorrida',
+                    `${distancia.toLocaleString('pt-BR', {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 2
+                    })} km`
+                  ],
+                  [
+                    'Valor por km',
+                    frete.valorKm
+                      ? `${frete.valorKm}/km`
+                      : 'R$ 0,00/km'
+                  ],
+                  [
+                    'Total do frete',
+                    frete.total || 'R$ 0,00'
+                  ],
+                  [
+                    'Situação',
+                    frete.status ||
+                    (
+                      frete.pago
+                        ? 'Pago'
+                        : 'Pendente'
+                    )
+                  ]
+                ]
+              )
+            : '';
+      }
+
+      const marcador =
+        '<section>\n    <h2>Histórico de tratamentos</h2>';
+
+      if (html.includes(marcador)) {
+        html = html.replace(
+          marcador,
+          `${blocoFrete}${blocoCobrancas}${marcador}`
+        );
+      } else {
+        html = html.replace(
+          '<footer>',
+          `${blocoFrete}${blocoCobrancas}<footer>`
+        );
+      }
+
+      return html;
+    };
+  }
+
+  if (excelOriginal) {
+    window.montarExcelXml = function(relatorio) {
+      let xml =
+        excelOriginal(relatorio);
+
+      const dados =
+        relatorio && relatorio.dados
+          ? relatorio.dados
+          : {};
+
+      const cobrancas =
+        dados.cobrancas || {};
+
+      const frete =
+        dados.frete ||
+        cobrancas.frete ||
+        null;
+
+      const protocolo =
+        cobrancas.protocolo || {};
+
+      const sanidade =
+        cobrancas.sanidade || {};
+
+      const linhas = [];
+
+      if (
+        typeof window.linhaExcel === 'function'
+      ) {
+        linhas.push(
+          window.linhaExcel(
+            'Protocolo sanitário',
+            protocolo.valor ||
+            dados.custoProtocoloTotal ||
+            'R$ 0,00'
+          ),
+          window.linhaExcel(
+            'Protocolo sanitário - situação',
+            protocolo.status ||
+            (
+              protocolo.pago
+                ? 'Pago'
+                : 'Pendente'
+            )
+          ),
+          window.linhaExcel(
+            'Sanidade',
+            sanidade.valor ||
+            dados.sanidade?.custoTotal ||
+            'R$ 0,00'
+          ),
+          window.linhaExcel(
+            'Sanidade - situação',
+            sanidade.status ||
+            (
+              sanidade.pago
+                ? 'Pago'
+                : 'Pendente'
+            )
+          )
+        );
+
+        if (
+          frete &&
+          frete.ativo !== false
+        ) {
+          linhas.push(
+            window.linhaExcel(
+              'Frete - data',
+              frete.data || ''
+            ),
+            window.linhaExcelNumero(
+              'Frete - distância (km)',
+              frete.distanciaKm
+            ),
+            window.linhaExcelNumero(
+              'Frete - valor por km (R$)',
+              frete.valorKmNumerico ||
+              converterNumeroV652(
+                frete.valorKm
+              )
+            ),
+            window.linhaExcelNumero(
+              'Frete - total (R$)',
+              frete.totalNumerico ||
+              converterNumeroV652(
+                frete.total
+              )
+            ),
+            window.linhaExcel(
+              'Frete - situação',
+              frete.status ||
+              (
+                frete.pago
+                  ? 'Pago'
+                  : 'Pendente'
+              )
+            )
+          );
+        }
+
+        linhas.push(
+          window.linhaExcelNumero(
+            'Total das cobranças (R$)',
+            cobrancas.totalNumerico ||
+            converterNumeroV652(
+              cobrancas.total
+            )
+          ),
+          window.linhaExcelNumero(
+            'Total pago (R$)',
+            cobrancas.totalPagoNumerico ||
+            converterNumeroV652(
+              cobrancas.totalPago
+            )
+          ),
+          window.linhaExcelNumero(
+            'Saldo pendente (R$)',
+            cobrancas.saldoNumerico ||
+            converterNumeroV652(
+              cobrancas.saldo
+            )
+          )
+        );
+      }
+
+      if (
+        linhas.length &&
+        typeof window.abaExcel === 'function'
+      ) {
+        const aba =
+          window.abaExcel(
+            'Cobrancas',
+            linhas,
+            2
+          );
+
+        xml = xml.replace(
+          '</Workbook>',
+          `${aba}\n</Workbook>`
+        );
+      }
+
+      return xml;
+    };
+  }
+})();
