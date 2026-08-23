@@ -388,7 +388,7 @@ function instalarCardConsumoV652() {
     <div class="cabecalho-card-v652">
       <div>
         <span class="rotulo-v652">02. Automação do trato</span>
-        <h3>Consumo diário</h3>
+        <h3>Consumo diário médio</h3>
       </div>
       <div class="icone-card-v652" aria-hidden="true">🌽</div>
     </div>
@@ -666,23 +666,53 @@ function preencherConsumoV652(dados) {
   definirTextoV652('consumoNaturalAutomacao', natural);
   definirTextoV652('consumoMSAutomacao', ms);
 
-  const data = consumo.data || '—';
-  const atualizado = String(consumo.atualizadoEm || '').trim();
-  const horarioMatch = atualizado.match(/(\d{2}:\d{2})$/);
-  const horario = horarioMatch ? horarioMatch[1] : '';
+  const dataInicio =
+    consumo.dataInicio ||
+    consumo.data ||
+    '—';
+
+  const dataFim =
+    consumo.dataFim ||
+    consumo.data ||
+    '—';
+
+  const dias =
+    Number(
+      consumo.diasConsiderados || 0
+    );
 
   definirTextoV652(
     'consumoAutomacaoData',
-    horario
-      ? `Dados de ${data} às ${horario}`
-      : `Dados de ${data}`
+    consumo.mediaPeriodo
+      ? (
+          dataInicio === dataFim
+            ? `Média acumulada do lote • ${dataFim}`
+            : `Média do período: ${dataInicio} a ${dataFim}` +
+              (dias > 0 ? ` • ${dias} dia(s)` : '')
+        )
+      : `Dados de ${consumo.data || '—'}`
   );
 
-  // O card de resumo usa exatamente o mesmo valor, com 3 casas.
-  definirTextoV652(
-    'consumoMS',
-    `${ms} kg`
-  );
+  /**
+   * O card principal de consumo é a fonte oficial.
+   * Não atualizamos novamente o card "Consumo de MS"
+   * do resumo para evitar informação duplicada.
+   */
+  const resumoConsumo =
+    document.getElementById(
+      'consumoMS'
+    );
+
+  if (resumoConsumo) {
+    const card =
+      resumoConsumo.closest(
+        '.metrica, .item-resumo, article, .resumo-item'
+      );
+
+    if (card) {
+      card.style.display = 'none';
+    }
+  }
 }
 
 function preencherProtocoloSanitarioV652(dados) {
@@ -1539,3 +1569,47 @@ function formatarNumeroV682(valor) {
     };
   }
 })();
+
+
+/* V6.8.7 — deixa explícito que o %PV é médio do período. */
+document.addEventListener('DOMContentLoaded', function() {
+  const consumoPv =
+    document.getElementById(
+      'consumoPV'
+    );
+
+  if (!consumoPv) {
+    return;
+  }
+
+  const linha =
+    consumoPv.closest(
+      '.linha-dado, .desempenho-linha, .item-dado, div'
+    );
+
+  if (!linha) {
+    return;
+  }
+
+  const rotulos =
+    linha.querySelectorAll(
+      'span, p, small'
+    );
+
+  rotulos.forEach(
+    function(elemento) {
+      const texto =
+        String(
+          elemento.textContent || ''
+        ).trim();
+
+      if (
+        texto.toLowerCase() ===
+        'consumo sobre peso vivo'
+      ) {
+        elemento.textContent =
+          'Consumo médio sobre peso vivo';
+      }
+    }
+  );
+});
