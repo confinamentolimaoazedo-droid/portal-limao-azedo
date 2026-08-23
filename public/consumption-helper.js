@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Portal do Cliente — V6.8.6
+ * Portal do Cliente — V6.8.8
  *
  * Atualizações:
  * - Consumo diário com data e horário;
@@ -647,12 +647,23 @@ function preencherConsumoV652(dados) {
   const consumo = dados?.consumoAutomacao || null;
 
   if (!consumo) {
-    definirTextoV652('consumoNaturalAutomacao', '—');
-    definirTextoV652('consumoMSAutomacao', '—');
+    definirTextoV652(
+      'consumoNaturalAutomacao',
+      '—'
+    );
+
+    definirTextoV652(
+      'consumoMSAutomacao',
+      formatarConsumoV652(
+        dados?.consumoMS || 0
+      )
+    );
+
     definirTextoV652(
       'consumoAutomacaoData',
-      'Sem importação disponível'
+      'Média ainda não disponível'
     );
+
     return;
   }
 
